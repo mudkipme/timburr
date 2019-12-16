@@ -13,13 +13,13 @@ import (
 
 func main() {
 	if err := utils.InitConfig(); err != nil {
-		log.WithError(err).Panic("Config init failed.")
+		log.WithError(err).Panic("config init failed")
 	}
 
 	sub := lib.DefaultSubscriber()
 	for _, rule := range utils.Config.Rules {
 		if err := sub.Subscribe(rule); err != nil {
-			log.WithError(err).Panicf("Subscribe rule %v failed.", rule.Name)
+			log.WithError(err).Panicf("subscribe rule %v failed", rule.Name)
 		}
 	}
 

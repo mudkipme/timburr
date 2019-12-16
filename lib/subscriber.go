@@ -8,6 +8,7 @@ import (
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
+// Subscriber can subscribe to mutiple rules to consume messages
 type Subscriber struct {
 	metadataWatcher *MetadataWatcher
 	config          *SubScriberConfig
@@ -15,6 +16,7 @@ type Subscriber struct {
 	mutex           sync.Mutex
 }
 
+// SubScriberConfig contains configuration of kafka
 type SubScriberConfig struct {
 	BrokerList                   string
 	GroupIDPrefix                string
@@ -22,6 +24,7 @@ type SubScriberConfig struct {
 	MetadataWatchRefreshInterval time.Duration
 }
 
+// DefaultSubscriber creates a subscriber based on config.yml
 func DefaultSubscriber() *Subscriber {
 	cfg := SubScriberConfig{
 		BrokerList:                   utils.Config.Kafka.BrokerList,
@@ -32,6 +35,7 @@ func DefaultSubscriber() *Subscriber {
 	return NewSubscriber(&cfg)
 }
 
+// NewSubscriber creates a new subscriber
 func NewSubscriber(config *SubScriberConfig) *Subscriber {
 	s := &Subscriber{
 		config:        config,
@@ -40,6 +44,7 @@ func NewSubscriber(config *SubScriberConfig) *Subscriber {
 	return s
 }
 
+// Subscribe creates a new subscription with a rule
 func (s *Subscriber) Subscribe(rule utils.RuleConfig) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -72,6 +77,7 @@ func (s *Subscriber) Subscribe(rule utils.RuleConfig) error {
 	return sub.Subscribe()
 }
 
+// Unsubscribe turns off all subscriptions
 func (s *Subscriber) Unsubscribe() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()

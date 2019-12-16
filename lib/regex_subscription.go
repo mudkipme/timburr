@@ -8,6 +8,7 @@ import (
 	"github.com/mudkipme/timburr/utils"
 )
 
+// RegexSubscription can subscribe to topics matching regular expression, and watch for changes of topics
 type RegexSubscription struct {
 	config          *SubscriptionConfig
 	rule            utils.RuleConfig
@@ -19,6 +20,7 @@ type RegexSubscription struct {
 	mutex           sync.Mutex
 }
 
+// Subscribe starts a basic subscription and listens to metadata watcher
 func (sub *RegexSubscription) Subscribe() error {
 	sub.mutex.Lock()
 	defer sub.mutex.Unlock()
@@ -80,7 +82,6 @@ func (sub *RegexSubscription) resubscribe(topics []string) error {
 	newRule := utils.RuleConfig{
 		Name:        sub.rule.Name,
 		Topics:      topics,
-		Concurrency: sub.rule.Concurrency,
 		Filter:      sub.rule.Filter,
 		TaskType:    sub.rule.TaskType,
 	}
@@ -91,6 +92,7 @@ func (sub *RegexSubscription) resubscribe(topics []string) error {
 	return sub.subscription.Subscribe()
 }
 
+// Unsubscribe stops the underlay basic subscription and metadata watcher
 func (sub *RegexSubscription) Unsubscribe() {
 	sub.mutex.Lock()
 	defer sub.mutex.Unlock()

@@ -2,13 +2,16 @@ package lib
 
 import (
 	"sync"
+	"time"
 
+	rate "github.com/beefsack/go-rate"
 	"github.com/mudkipme/timburr/lib/task"
 	"github.com/mudkipme/timburr/utils"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
+// BasicSubscription can subscribe to kafka topics and handle task to task runner
 type BasicSubscription struct {
 	config     *SubscriptionConfig
 	rule       utils.RuleConfig
@@ -16,12 +19,14 @@ type BasicSubscription struct {
 	consumer   *kafka.Consumer
 	subscribed bool
 	stopChan   chan bool
+	limiter    *rate.RateLimiter
 }
 
 func (sub *BasicSubscription) topics() []string {
 	return ruleTopics(sub.rule)
 }
 
+// Subscribe creates a new kafka consumer and start to poll messages
 func (sub *BasicSubscription) Subscribe() error {
 	sub.mutex.Lock()
 	defer sub.mutex.Unlock()
@@ -45,6 +50,12 @@ func (sub *BasicSubscription) Subscribe() error {
 	}
 	sub.stopChan = make(chan bool, 1)
 	sub.subscribed = true
+	if sub.rule.RateLimit > 0 {
+		if sub.rule.RateInterval == 0 {
+			sub.rule.RateInterval = 1000
+		}
+		sub.limiter = rate.New(sub.rule.RateLimit, time.Duration(sub.rule.RateInterval)*time.Millisecond)
+	}
 	go sub.consume()
 	log.Infof("subscribed to %v, rule: %v", topics, sub.rule.Name)
 	return nil
@@ -65,6 +76,9 @@ func (sub *BasicSubscription) consume() {
 			}
 			switch e := ev.(type) {
 			case *kafka.Message:
+				if sub.limiter != nil {
+					sub.limiter.Wait()
+				}
 				sub.mutex.Lock()
 				sub.handleMessage(e)
 				sub.mutex.Unlock()
@@ -90,7 +104,7 @@ func (sub *BasicSubscription) consume() {
 }
 
 func (sub *BasicSubscription) handleMessage(km *kafka.Message) error {
-	executor := task.TaskTypeFromString(sub.rule.TaskType).GetExecutor()
+	executor := task.TypeFromString(sub.rule.TaskType).GetExecutor()
 	err := executor.Execute(km.Value)
 	if err != nil {
 		log.WithError(err).Warn("execute message error")
@@ -98,6 +112,7 @@ func (sub *BasicSubscription) handleMessage(km *kafka.Message) error {
 	return err
 }
 
+// Unsubscribe stops polling messages
 func (sub *BasicSubscription) Unsubscribe() {
 	sub.mutex.Lock()
 	defer sub.mutex.Unlock()

@@ -8,11 +8,13 @@ import (
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
+// MetadataWatcherEvent defines an event, it's either the topics in kafka changes, or an error occurs
 type MetadataWatcherEvent struct {
 	Topics []string
 	Err    error
 }
 
+// MetadataWatcher watches the change of topics and notify event channels
 type MetadataWatcher struct {
 	mutex         sync.RWMutex
 	knownTopics   []string
@@ -21,6 +23,7 @@ type MetadataWatcher struct {
 	eventChannels []chan MetadataWatcherEvent
 }
 
+// NewMetadataWatcher creates a new metadata watcher with a kafka consumer
 func NewMetadataWatcher(consumer *kafka.Consumer, refreshInterval time.Duration) (*MetadataWatcher, error) {
 	watcher := &MetadataWatcher{
 		consumer:      consumer,
@@ -70,7 +73,7 @@ func (mw *MetadataWatcher) setup(refreshInterval time.Duration) (chan bool, erro
 					}
 				}
 				if added {
-					log.Infof("Topic changed: %v", topics)
+					log.Infof("topic changed: %v", topics)
 					mw.emit(topics, nil)
 					mw.knownTopics = topics
 				}
@@ -96,12 +99,14 @@ func (mw *MetadataWatcher) emit(topics []string, err error) {
 	}(chans, MetadataWatcherEvent{Topics: topics, Err: err})
 }
 
+// AddListener adds a event channel to the metadata watcher
 func (mw *MetadataWatcher) AddListener(ch chan MetadataWatcherEvent) {
 	mw.mutex.Lock()
 	defer mw.mutex.Unlock()
 	mw.eventChannels = append(mw.eventChannels, ch)
 }
 
+// RemoveListener removes a event channel from the metadata watcher
 func (mw *MetadataWatcher) RemoveListener(ch chan MetadataWatcherEvent) {
 	mw.mutex.Lock()
 	defer mw.mutex.Unlock()
@@ -113,6 +118,7 @@ func (mw *MetadataWatcher) RemoveListener(ch chan MetadataWatcherEvent) {
 	}
 }
 
+// GetTopics lists all topics from kafka
 func (mw *MetadataWatcher) GetTopics() ([]string, error) {
 	metadata, err := mw.consumer.GetMetadata(nil, true, 5000)
 	if err != nil {
@@ -125,6 +131,7 @@ func (mw *MetadataWatcher) GetTopics() ([]string, error) {
 	return topics, nil
 }
 
+// Disconnect closes the metadata watcher
 func (mw *MetadataWatcher) Disconnect() error {
 	mw.stopChan <- true
 	return mw.consumer.Close()

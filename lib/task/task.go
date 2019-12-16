@@ -4,21 +4,25 @@ import (
 	"sync"
 )
 
-type TaskExecutor interface {
+// Executor can execute a certain from a kafka message
+type Executor interface {
 	Execute(message []byte) error
 }
 
-type TaskType int16
+// Type is an enum for task types
+type Type int16
 
 const (
-	JobRunnerTask TaskType = iota
+	// JobRunnerTask executes a MediaWiki job via event bus
+	JobRunnerTask Type = iota
+	// PurgeTask purges the front-end cache of a URL
 	PurgeTask
 )
 
 var getexMutex sync.Mutex
-var taskMap = make(map[TaskType]TaskExecutor)
+var taskMap = make(map[Type]Executor)
 
-func (t TaskType) String() string {
+func (t Type) String() string {
 	switch t {
 	case JobRunnerTask:
 		return "job-runner"
@@ -28,7 +32,8 @@ func (t TaskType) String() string {
 	return "unknown"
 }
 
-func (t TaskType) GetExecutor() TaskExecutor {
+// GetExecutor returns a task executor for a task type
+func (t Type) GetExecutor() Executor {
 	getexMutex.Lock()
 	defer getexMutex.Unlock()
 
@@ -36,20 +41,21 @@ func (t TaskType) GetExecutor() TaskExecutor {
 		return executor
 	}
 
-	var executor TaskExecutor
+	var executor Executor
 	switch t {
 	case JobRunnerTask:
 		executor = DefaultJobRunnerExecutor()
 		break
 	case PurgeTask:
-		executor = DefaultPurgeTask()
+		executor = DefaultPurgeExecutor()
 		break
 	}
 	taskMap[t] = executor
 	return executor
 }
 
-func TaskTypeFromString(s string) TaskType {
+// TypeFromString returns a task type from a string
+func TypeFromString(s string) Type {
 	switch s {
 	case JobRunnerTask.String():
 		return JobRunnerTask
