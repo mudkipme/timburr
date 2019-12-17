@@ -35,6 +35,7 @@ var Config = struct {
 		GroupIDPrefix                string `yaml:"groupIDPrefix"`
 		MetadataWatchGroupID         string `yaml:"metadataWatchGroupID"`
 		MetadataWatchRefreshInterval int64  `yaml:"metadataWatchRefreshInterval"`
+		Logstash                     string `yaml:"logstash"`
 	} `yaml:"options"`
 
 	JobRunner struct {

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
+	logrustash "github.com/bshuster-repo/logrus-logstash-hook"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mudkipme/timburr/lib"
@@ -14,6 +16,18 @@ import (
 func main() {
 	if err := utils.InitConfig(); err != nil {
 		log.WithError(err).Panic("config init failed")
+	}
+
+	if utils.Config.Options.Logstash != "" {
+		conn, err := net.Dial("tcp", utils.Config.Options.Logstash)
+		if err != nil {
+			log.Fatal(err)
+		}
+		hook, err := logrustash.NewHookWithConn(conn, "timburr")
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.AddHook(hook)
 	}
 
 	sub := lib.DefaultSubscriber()

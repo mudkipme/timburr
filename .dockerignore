@@ -1,0 +1,5 @@
+/vendor
+/conf/*
+.DS_Store
+.vscode
+/timburr
