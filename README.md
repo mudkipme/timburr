@@ -176,6 +176,17 @@ rules:
   rateInterval: 10000
 ```
 
+## Installation
+
+Golang and librdkafka-dev is required to compile timburr. It is recommended to run timburr via a [Docker image](https://hub.docker.com/r/mudkip/timburr).
+
+```bash
+docker create --name timburr --net isolated_nw \
+  -v <path-to-config>/timburr.yml:/app/conf/config.yml \
+  --restart=always \
+  mudkip/timburr
+```
+
 ## LICENSE
 
 This project is under [BSD-3-Clause](LICENSE).
