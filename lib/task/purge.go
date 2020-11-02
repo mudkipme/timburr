@@ -2,7 +2,6 @@ package task
 
 import (
 	"encoding/json"
-	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -62,8 +61,10 @@ func NewPurgeExecutor(expiry time.Duration, entries []utils.PurgeEntryConfig, cf
 // Execute sends the corresponding PURGE requests from a kafka message
 func (t *PurgeExecutor) Execute(message []byte) error {
 	type purgeData struct {
-		URL       string  `json:"url"`
-		Timestamp float64 `json:"timestamp"`
+		Meta struct {
+			URI  string    `json:"uri"`
+			Date time.Time `json:"dt"`
+		} `json:"meta"`
 	}
 	var msg purgeData
 	err := json.Unmarshal(message, &msg)
@@ -72,12 +73,12 @@ func (t *PurgeExecutor) Execute(message []byte) error {
 	}
 
 	// skip expired message
-	if sec, dec := math.Modf(msg.Timestamp); time.Now().After(time.Unix(int64(sec), int64(dec*(1e9))).Add(t.expiry)) {
-		log.WithField("url", msg.URL).Info("skip purge")
+	if time.Now().After(msg.Meta.Date.Add(t.expiry)) {
+		log.WithField("url", msg.Meta.URI).Info("skip purge")
 		return nil
 	}
 
-	t.handlePurge(msg.URL)
+	t.handlePurge(msg.Meta.URI)
 	return nil
 }
 

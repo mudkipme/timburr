@@ -59,7 +59,7 @@ output {
     codec => json {
       charset => "UTF-8"
     }
-    topic_id => "%{[meta][topic]}"
+    topic_id => "%{[meta][stream]}"
   }
 }
 ```
@@ -68,11 +68,11 @@ On Wikimedia wikis, [EventGate](https://github.com/wikimedia/eventgate) is imple
 
 ### MediaWiki
 
-Timburr requires a [modified version of EventBus](https://github.com/mudkipme/mediawiki-extensions-EventBus) extension<sup>[1](#why-eventbus)</sup>. Currently timburr only works with **MediaWiki 1.33.x**. Support of MediaWiki 1.34 hasn't been tested but it should work with rebasing EventBus extension to `REL1_34` and a few modification (`meta.topic -> meta.stream`) in configuration.
+Timburr requires a [modified version of EventBus](https://github.com/mudkipme/mediawiki-extensions-EventBus) extension<sup>[1](#why-eventbus)</sup> and MediaWiki 1.35.
 
 ```php
 $wgJobRunRate = 0;
-$wgJobTypeConf['default'] = [ 'class' => 'JobQueueEventBus', 'readOnlyReason' => false ];
+$wgJobTypeConf['default'] = [ 'class' => '\\MediaWiki\\Extension\\EventBus\\Adapters\\JobQueue\\JobQueueEventBus', 'readOnlyReason' => false ];
 
 wfLoadExtension( 'EventBus' );
 $wgEnableEventBus = 'TYPE_ALL';
@@ -82,18 +82,12 @@ $wgEventServices = [
 
 // only needed to handle cache purging
 $wgEventRelayerConfig = [
-    'default' => [
-        'class' => EventRelayerKafka::class,
-        'KafkaEventHost' => '<kafka-broker>:9092'
-    ]
+    'cdn-url-purges' => [
+        'class' => \MediaWiki\Extension\EventBus\Adapters\EventRelayer\CdnPurgeEventRelayer::class,
+        'stream' => 'cdn-url-purges'
+    ],
 ];
 
-```
-
-If timburr is used to handle cache purging, `nmred/kafka-php` is required to installed on MediaWiki:
-
-```bash
-composer require nmred/kafka-php:0.1.5 --update-no-dev
 ```
 
 ### Timburr
@@ -111,7 +105,7 @@ options:
   logstash: "<logstash-server>:<logstash-port>" # the endpoint of Logstash tcp input, only needed to send logs to Logstash
 
 jobRunner:
-  endpoint: http://<mediawiki-host>/wiki/Special:RunSingleJob
+  endpoint: http://<mediawiki-host>/rest.php/eventbus/v0/internal/job/execute
   excludeFields: ["host", "headers", "@timestamp", "@version"] # exclude fields added by Logstash
 
 purge: # only needed to handle cache purging
@@ -178,7 +172,7 @@ rules:
 
 ## Installation
 
-Golang and librdkafka-dev is required to compile timburr. It is recommended to run timburr via a [Docker image](https://hub.docker.com/r/mudkip/timburr).
+Golang and librdkafka-dev is required to compile timburr. It is recommended to run timburr via a [Docker image](https://github.com/users/mudkipme/packages/container/package/timburr).
 
 ```bash
 docker create --name timburr --net isolated_nw \
@@ -193,7 +187,7 @@ This project is under [BSD-3-Clause](LICENSE).
 
 52Poké (神奇宝贝部落格/神奇寶貝部落格, 神奇宝贝百科/神奇寶貝百科) is a Chinese-language Pokémon fan site. Neither the name of 52Poké nor the names of the contributors may be used to endorse any usage of codes under this project.
 
-Pokémon ©2019 Pokémon. ©1995-2019 Nintendo/Creatures Inc./GAME FREAK inc. 52Poké and this project is not affiliated with any Pokémon-related companies.
+Pokémon ©2020 Pokémon. ©1995-2020 Nintendo/Creatures Inc./GAME FREAK inc. 52Poké and this project is not affiliated with any Pokémon-related companies.
 
 ---
 
