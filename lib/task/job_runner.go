@@ -63,6 +63,7 @@ func (t *JobRunnerExecutor) retryExecute(message []byte, times int, wait time.Du
 			time.Sleep(wait)
 			return t.retryExecute(message, times, 2*wait)
 		}
+		return err
 	}
 	return nil
 }
