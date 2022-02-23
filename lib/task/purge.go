@@ -93,7 +93,7 @@ func (t *PurgeExecutor) handlePurge(item string) {
 	if len(queries) > 0 {
 		lastQuery = queries[len(queries)-1]
 	}
-	pathComponents := strings.Split(u.RawPath, "/")
+	pathComponents := strings.Split(u.Path, "/")
 	firstPath := ""
 	if len(pathComponents) > 1 {
 		firstPath = pathComponents[1]
@@ -153,10 +153,8 @@ func (t *PurgeExecutor) doRequest(method, url string, headers map[string]string,
 		ch <- false
 		return
 	}
-	if headers != nil {
-		for k, v := range headers {
-			req.Header.Set(k, v)
-		}
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 	if host := req.Header.Get("Host"); host != "" {
 		req.Host = host

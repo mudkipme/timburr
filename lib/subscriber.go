@@ -85,4 +85,8 @@ func (s *Subscriber) Unsubscribe() {
 	for _, sub := range s.subscriptions {
 		sub.Unsubscribe()
 	}
+
+	if s.metadataWatcher != nil {
+		s.metadataWatcher.Disconnect()
+	}
 }

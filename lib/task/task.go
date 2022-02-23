@@ -45,10 +45,8 @@ func (t Type) GetExecutor() Executor {
 	switch t {
 	case JobRunnerTask:
 		executor = DefaultJobRunnerExecutor()
-		break
 	case PurgeTask:
 		executor = DefaultPurgeExecutor()
-		break
 	}
 	taskMap[t] = executor
 	return executor
